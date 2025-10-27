@@ -62,7 +62,8 @@ const styles = {
     footer: {
         marginTop: 'auto',
         borderTop: '1px solid rgba(255, 255, 255, 0.3)',
-        paddingTop: '15px',
+        paddingTop: '20px',
+        marginBottom: '25px'
     },
     logoutButton: {
         width: '100%',
