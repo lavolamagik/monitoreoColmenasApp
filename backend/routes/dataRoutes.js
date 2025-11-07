@@ -24,7 +24,7 @@ router.get('/colmena/:hiveCode', protect, async (req, res) => {
         // 1. Obtener los sensores activos desde PostgreSQL
         // Si es el prototipo, usaremos un modelo de sensores básico para el frontend
         const activeSensors = isPrototype 
-            ? ['temperatura_BMP280', 'humidity', 'peso'] // Sensores comunes del prototipo
+            ? ['temperatura_BMP280', 'humidity', 'peso', 'gx', 'gy', 'gz'] // Sensores comunes del prototipo
             : await colmenaRepo.getActiveSensorsByHiveCode(hiveCode);
 
         if (activeSensors.length === 0) {
