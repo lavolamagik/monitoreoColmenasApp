@@ -318,7 +318,8 @@ function ColmenaDetailPage() {
                 <div style={{ padding: CONTENT_MARGIN }}>
                     
                     <button 
-                        onClick={() => navigate('/app/dashboard')} 
+                        onClick={() => navigate('/app/mis-colmenas')} 
+
                         style={dashboardStyles.backButton}
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = THEME_COLOR}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = BORDER_LIGHT}

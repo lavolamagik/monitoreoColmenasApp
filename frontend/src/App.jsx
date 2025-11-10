@@ -6,6 +6,7 @@ import ColmenaDetailPage from './pages/ColmenaDetailPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import UnauthorizedPage from './pages/UnauthorizedPage'; 
 import NotFoundPage from './pages/NotFoundPage';
+import MisColmenas from './pages/MisColmenas';
 //import ForgotPasswordPage from './pages/ForgotPasswordPage'; 
 //import ResetPasswordPage from './pages/ResetPasswordPage'; 
 
@@ -23,6 +24,7 @@ function App() {
         {/* 2. RUTAS PROTEGIDAS (Apicultor y Admin) */}
         <Route element={<ProtectedRoute allowedRoles={['apicultor', 'superadmin']} />}>
           <Route path="/app/dashboard" element={<ApicultorDashboard />} />
+          <Route path="/app/mis-colmenas" element={<MisColmenas />} />
           <Route path="/app/colmena/:hiveCode" element={<ColmenaDetailPage />} /> 
         
             {/* Rutas de Admin anidadas (Doble protección) */}

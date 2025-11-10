@@ -1,4 +1,4 @@
-// backend/config/influxdb.js (CÓDIGO MODIFICADO)
+// backend/config/influxdb.js (CÓDIGO CORREGIDO SIN INDENTACIÓN EN FLUX)
 const { InfluxDB } = require('@influxdata/influxdb-client');
 require('dotenv').config(); // Asegurar que dotenv esté cargado si este módulo se usa solo
 
@@ -15,12 +15,12 @@ const queryApi = client.getQueryApi(org);
  */
 async function testInfluxConnection() {
     try {
-        // Consulta FLUX simple: Obtener el primer punto de datos en el bucket
+        // CORRECCIÓN CLAVE: Eliminar toda la indentación dentro del template string
         const testQuery = `
-            from(bucket: "${bucket}")
-            |> range(start: 0)
-            |> limit(n: 1)
-        `;
+from(bucket: "${bucket}")
+|> range(start: 0)
+|> limit(n: 1)
+`;
         
         // Ejecutamos la consulta. Si no hay error, la conexión es exitosa.
         await new Promise((resolve, reject) => {
@@ -41,7 +41,7 @@ async function testInfluxConnection() {
         console.error('🚨 ERROR CRÍTICO: Fallo al conectar/consultar InfluxDB.');
         console.error(`URL: ${url}. Org: ${org}. Error: ${error.message}`);
         console.error('Revisa tu INFLUXDB_TOKEN, INFLUXDB_ORG y la URL en .env.');
-        // Opcional: Si InfluxDB es crítico, podrías salir del proceso aquí:
+        // Nota: Si InfluxDB es crítico, puedes descomentar la siguiente línea:
         // process.exit(1); 
     }
 }
@@ -52,7 +52,6 @@ testInfluxConnection();
 
 /**
  * Función genérica para ejecutar una consulta FLUX y devolver los datos en un array de objetos.
- * ... (resto de la función queryInflux se mantiene igual)
  */
 async function queryInflux(fluxQuery) {
     const results = [];
@@ -68,7 +67,7 @@ async function queryInflux(fluxQuery) {
                 reject(error);
             },
             complete: () => {
-                // console.log(`Consulta InfluxDB completada. Filas: ${results.length}`); // Puedes comentar esto para limpiar logs
+                // console.log(`Consulta InfluxDB completada. Filas: ${results.length}`); 
                 resolve(results);
             },
         });

@@ -1,7 +1,8 @@
-// backend/repositories/sensorRepository.js (CÓDIGO FINAL CON FALLBACK)
+// backend/repositories/sensorRepository.js (SOLUCIÓN TEMPORAL: MUESTRA TODOS LOS DATOS)
 const { queryInflux, bucket } = require('../config/influxdb'); 
 
-const FLUX_HIVE_CODE_TAG = 'hive_code'; 
+// Ya no usamos FLUX_HIVE_CODE_TAG en esta solución temporal
+// const FLUX_HIVE_CODE_TAG = 'id'; 
 
 const buildMeasurementFilters = (activeSensors) => {
     if (!activeSensors || activeSensors.length === 0) return 'false'; 
@@ -14,25 +15,26 @@ const buildMeasurementFilters = (activeSensors) => {
 
 /**
  * @exports getHiveSensorHistory
- * Agrega el parámetro isPrototype para el fallback de datos sin ID.
+ * Muestra datos históricos de TODO EL BUCKET, filtrados solo por RANGO y MEDICIÓN.
  */
-const getHiveSensorHistory = async (hiveCode, activeSensors, isPrototype, range = '-365d') => {
+const getHiveSensorHistory = async (hiveCode, activeSensors, isPrototype, rangeValue = '365d') => {
     const filters = buildMeasurementFilters(activeSensors);
     
-    // LÓGICA DE FALLBACK: Si es prototipo, no incluimos el filtro de ID.
-    const hiveCodeFilter = isPrototype 
-        ? '' // Vacío, no filtra por ID
-        : `|> filter(fn: (r) => r.${FLUX_HIVE_CODE_TAG} == "${hiveCode}")`;
+    const fluxRangeStart = `-${rangeValue}`; 
 
+    // 🚨 CAMBIO CLAVE: Eliminamos el filtro por hiveCode/id
+    // const hiveCodeFilterLine = ''; 
+
+    // El prototipo ya no es necesario si quitamos el filtro de colmena
     const fluxQuery = `
-        from(bucket: "${bucket}")
-            |> range(start: ${range})
-            ${hiveCodeFilter}  
-            |> filter(fn: (r) => ${filters}) 
-            |> filter(fn: (r) => r._field == "value") 
-            |> aggregateWindow(every: 1h, fn: mean, createEmpty: false)
-            |> yield(name: "history_data")
-    `;
+from(bucket: "${bucket}")
+|> range(start: ${fluxRangeStart})
+// El filtro por hiveCode/id ha sido OMITIDO TEMPORALMENTE
+|> filter(fn: (r) => ${filters})
+|> filter(fn: (r) => r._field == "value") 
+|> aggregateWindow(every: 1h, fn: mean, createEmpty: false)
+|> yield(name: "history_data")
+`;
     
     return queryInflux(fluxQuery); 
 };
@@ -40,25 +42,21 @@ const getHiveSensorHistory = async (hiveCode, activeSensors, isPrototype, range 
 
 /**
  * @exports getLatestHiveData
- * Agrega el parámetro isPrototype para el fallback de datos sin ID.
+ * Obtiene el valor más reciente de CADA SENSOR en todo el bucket.
  */
 const getLatestHiveData = async (hiveCode, activeSensors, isPrototype) => {
     const filters = buildMeasurementFilters(activeSensors);
     
-    // LÓGICA DE FALLBACK: Si es prototipo, no incluimos el filtro de ID.
-    const hiveCodeFilter = isPrototype 
-        ? '' // Vacío, no filtra por ID
-        : `|> filter(fn: (r) => r.${FLUX_HIVE_CODE_TAG} == "${hiveCode}")`;
-
+    // 🚨 CAMBIO CLAVE: Eliminamos el filtro por hiveCode/id
     const fluxQuery = `
-        from(bucket: "${bucket}")
-            |> range(start: -30d) 
-            ${hiveCodeFilter} 
-            |> filter(fn: (r) => ${filters})
-            |> filter(fn: (r) => r._field == "value") 
-            |> last()
-            |> yield(name: "latest_data")
-    `;
+from(bucket: "${bucket}")
+|> range(start: -30d) 
+// El filtro por hiveCode/id ha sido OMITIDO TEMPORALMENTE
+|> filter(fn: (r) => ${filters})
+|> filter(fn: (r) => r._field == "value") 
+|> last()
+|> yield(name: "latest_data")
+`;
 
     const results = await queryInflux(fluxQuery);
     

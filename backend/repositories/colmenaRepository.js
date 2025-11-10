@@ -1,6 +1,10 @@
 // backend/repositories/colmenaRepository.js
-const db = require('../config/db');
-const { SENSOR_MODELS } = require('../config/sensorModel'); // Importa la lista maestra de sensores
+const db = require('../config/db'); 
+const { SENSOR_MODELS } = require('../config/sensorModel'); 
+
+// =======================================================
+// EXPORTS DE LECTURA Y CREACIÓN (Originales)
+// =======================================================
 
 /**
  * @exports createColmena
@@ -14,7 +18,6 @@ const createColmena = async (hiveCode, description, selectedSensors, userId) => 
     );
 
     if (existingHive.rows.length > 0) {
-        // Lanzamos un error que será capturado por la ruta y devuelto al frontend (status 400)
         throw new Error(`El código de monitor ${hiveCode} ya está registrado por otro apicultor.`);
     }
 
@@ -30,12 +33,9 @@ const createColmena = async (hiveCode, description, selectedSensors, userId) => 
 
     // 3. Insertar los sensores seleccionados en la tabla 'colmena_sensores'
     if (selectedSensors && selectedSensors.length > 0) {
-        
-        // Obtenemos solo las keys de los sensores válidos para evitar inyección o datos incorrectos
         const validSensorKeys = SENSOR_MODELS.map(s => s.key);
         const sensorsToInsert = selectedSensors.filter(key => validSensorKeys.includes(key));
         
-        // Usamos un bucle para insertar uno por uno (más simple para pg-node con un número dinámico de sensores)
         for (const key of sensorsToInsert) {
              await db.query(
                  'INSERT INTO colmena_sensores (colmena_id, sensor_key) VALUES ($1, $2)', 
@@ -69,7 +69,7 @@ const getColmenasByUserId = async (userId) => {
  * Usado por dataRoutes.js para filtrar la consulta a InfluxDB.
  */
 const getActiveSensorsByHiveCode = async (hiveCode) => {
-    // 1. Obtener la colmena_id a partir del hive_code
+    // 1. Obtener la colmena_id
     const hiveResult = await db.query(
         'SELECT id, user_id FROM colmenas WHERE hive_code = $1', 
         [hiveCode]
@@ -79,12 +79,13 @@ const getActiveSensorsByHiveCode = async (hiveCode) => {
         throw new Error(`Colmena con código ${hiveCode} no encontrada en PostgreSQL.`);
     }
 
-    const colmenaId = hiveResult.rows[0].id;
+    const hive = hiveResult.rows[0];
+    const colmenaIdInterna = hive.id; 
 
     // 2. Obtener las claves de los sensores activos
     const sensorsResult = await db.query(
         'SELECT sensor_key FROM colmena_sensores WHERE colmena_id = $1',
-        [colmenaId]
+        [colmenaIdInterna]
     );
 
     // Mapear el resultado para devolver un array de strings (keys)
@@ -92,10 +93,118 @@ const getActiveSensorsByHiveCode = async (hiveCode) => {
 };
 
 
-// 🚨 EXPORTACIÓN FINAL
+// =======================================================
+// 🚨 FUNCIONES DE EDICIÓN Y ELIMINACIÓN (CRÍTICAS PARA EL MODAL)
+// =======================================================
+
+/**
+ * @exports getHiveDetailsByCode
+ * Obtiene los detalles de una colmena por su hiveCode, incluyendo sus sensores activos.
+ * Esta función resuelve el problema de la desincronización de datos para el modal de edición.
+ */
+const getHiveDetailsByCode = async (hiveCode) => {
+    // 1. Obtener la información base
+    const hiveResult = await db.query(
+        'SELECT id, hive_code, description, user_id FROM colmenas WHERE hive_code = $1', 
+        [hiveCode]
+    );
+
+    if (hiveResult.rows.length === 0) {
+        return null;
+    }
+
+    const hive = hiveResult.rows[0];
+    const colmenaIdInterna = hive.id;
+    
+    // 2. Obtener los sensores activos
+    const sensorsResult = await db.query(
+        'SELECT sensor_key FROM colmena_sensores WHERE colmena_id = $1',
+        [colmenaIdInterna]
+    );
+
+    // 3. Agregar los sensores al objeto de colmena bajo el nombre esperado por el frontend
+    hive.selectedSensors = sensorsResult.rows.map(row => row.sensor_key);
+    
+    // Devolvemos el objeto completo
+    return hive;
+};
+
+
+/**
+ * @exports updateColmena
+ * Actualiza la descripción y los sensores de una colmena existente.
+ * Utiliza una transacción atómica.
+ */
+const updateColmena = async (hiveCode, description, selectedSensors) => {
+    // Nota: Asumimos que db.pool.connect() existe en tu configuración de db.js
+    const client = await db.pool.connect(); 
+    try {
+        await client.query('BEGIN');
+
+        // 1. Obtener la ID interna
+        const idResult = await client.query('SELECT id FROM colmenas WHERE hive_code = $1', [hiveCode]);
+        if (idResult.rowCount === 0) throw new Error(`Colmena ${hiveCode} no encontrada.`);
+        const colmenaId = idResult.rows[0].id;
+        
+        // 2. Actualizar la descripción
+        const updateDescriptionQuery = `
+            UPDATE colmenas 
+            SET description = $1
+            WHERE id = $2
+            RETURNING id;
+        `;
+        const result = await client.query(updateDescriptionQuery, [description, colmenaId]);
+        
+        // 3. Eliminar sensores antiguos
+        await client.query('DELETE FROM colmena_sensores WHERE colmena_id = $1', [colmenaId]);
+        
+        // 4. Insertar nuevos sensores
+        const validSensorKeys = SENSOR_MODELS.map(s => s.key);
+        const sensorsToInsert = selectedSensors.filter(key => validSensorKeys.includes(key));
+        
+        for (const key of sensorsToInsert) {
+             await client.query(
+                 'INSERT INTO colmena_sensores (colmena_id, sensor_key) VALUES ($1, $2)', 
+                 [colmenaId, key]
+             );
+        }
+
+        await client.query('COMMIT');
+        return { id: colmenaId, hive_code: hiveCode };
+
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error("Transacción fallida al editar colmena:", e);
+        throw e;
+    } finally {
+        client.release(); // Liberar el cliente de la pool
+    }
+};
+
+/**
+ * @exports deleteColmena
+ * Elimina la colmena (usada en la ruta DELETE).
+ */
+const deleteColmena = async (hiveCode) => {
+    // Usamos DELETE FROM colmenas, y CASCADE se encarga de colmena_sensores.
+    const result = await db.query('DELETE FROM colmenas WHERE hive_code = $1', [hiveCode]);
+    
+    if (result.rowCount === 0) {
+        throw new Error(`Colmena ${hiveCode} no encontrada para eliminación.`);
+    }
+    return true;
+};
+
+
+// =======================================================
+// EXPORTACIÓN FINAL
+// =======================================================
 module.exports = {
     createColmena,
     getColmenasByUserId,
     getActiveSensorsByHiveCode,
-    SENSOR_MODELS, // Exportamos para que la ruta de listado de sensores funcione
+    getHiveDetailsByCode,
+    updateColmena, 
+    deleteColmena, 
+    SENSOR_MODELS, 
 };

@@ -321,7 +321,6 @@ function ColmenaForm({ onColmenaRegistered }) {
                         </div>
                     ) : (
                         <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                            <PlusCircle size={20} />
                             Registrar Colmena
                         </div>
                     )}

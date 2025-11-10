@@ -1,4 +1,4 @@
-// src/api/colmenaService.js
+// src/api/colmenaService.js (CÓDIGO COMPLETO Y CORREGIDO)
 import { apiFetch } from './config'; 
 
 /**
@@ -27,6 +27,20 @@ export const createNewColmena = (hiveCode, description, selectedSensors) => {
 };
 
 /**
+ * 🚨 NUEVA FUNCIÓN: Actualiza los detalles de una colmena existente.
+ * PUT /api/colmenas/:hiveCode
+ */
+export const updateHiveDetails = (hiveCode, formData) => {
+    return apiFetch(`/colmenas/${hiveCode}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+            description: formData.description,
+            selectedSensors: formData.selectedSensors,
+        }),
+    });
+};
+
+/**
  * Obtiene la lista de colmenas del usuario logueado.
  * GET /api/colmenas
  */
@@ -37,7 +51,23 @@ export const getColmenasByUserId = () => {
 };
 
 export const getSensorModel = () => {
-    // Simplemente llamamos a la misma función de API, 
-    // pero la exportamos con el nombre que espera ColmenaDetailPage
+    // Es un alias para la función de la API de obtener sensores disponibles
     return getAvailableSensors();
+};
+
+/**
+ * Elimina una colmena por su hiveCode.
+ * DELETE /api/colmenas/:hiveCode
+ */
+export const deleteColmena = (hiveCode) => {
+    // apiFetch ya adjunta el token
+    return apiFetch(`/colmenas/${hiveCode}`, {
+        method: 'DELETE',
+    });
+};
+
+export const getHiveDetailsByCode = (hiveCode) => {
+    return apiFetch(`/colmenas/${hiveCode}`, {
+        method: 'GET',
+    });
 };
