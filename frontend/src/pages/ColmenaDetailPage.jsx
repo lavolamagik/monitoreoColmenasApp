@@ -400,7 +400,7 @@ function ColmenaDetailPage() {
             <div style={dashboardStyles.mainContainer}>
                 <Sidebar isVisible={isSidebarOpen} selectedMenu={selectedMenu} setSelectedMenu={setSelectedMenu} toggleSidebar={toggleSidebar} />
                 <main style={dynamicMainContentStyle}>
-                    <div style={{padding: CONTENT_MARGIN, color: STATUS_DANGER, border: `2px solid ${STATUS_DANGER}`, padding: '25px', marginTop: '20px', borderRadius: '12px', backgroundColor: '#FEF2F2'}}>
+                    <div style={{padding: CONTENT_MARGIN, color: STATUS_DANGER, border: `2px solid ${STATUS_DANGER}`, marginTop: '20px', borderRadius: '12px', backgroundColor: '#FEF2F2'}}>
                         <h1 style={{color: STATUS_DANGER, display: 'flex', alignItems: 'center', gap: '10px'}}><AlertTriangle size={30} /> Error al cargar datos </h1>
                         <p style={{color: TEXT_DARK, marginBottom: '20px'}}>{error}</p>
                         <button 
@@ -444,10 +444,6 @@ function ColmenaDetailPage() {
                     </button>
                     
                     <h1 style={styles.header}>Monitoreo en Vivo: Colmena {hiveCode}</h1>
-                    <p style={{marginBottom: '30px', color: TEXT_MUTED}}>
-                        Visualizando datos en tiempo real de {data.active_sensors.length} sensores activos.
-                    </p>
-                    
                     {/* -------------------------------------------------------- */}
                     {/* DATOS DE RESUMEN/AGRUPADOS (Tarjetas Expandibles) */}
                     {/* -------------------------------------------------------- */}

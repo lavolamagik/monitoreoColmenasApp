@@ -1,4 +1,4 @@
-// src/components/Sidebar.jsx (CÓDIGO FINAL CON CORRECCIÓN DE ROL Y FILTRADO DE ACCESO)
+// src/components/Sidebar.jsx (CÓDIGO FINAL CON LOGO A LA IZQUIERDA Y TÍTULO "BeeHive Monitor")
 import React, { useState, useContext } from 'react'; 
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext.jsx'; 
@@ -17,8 +17,8 @@ import {
 
 // --- Constantes de Diseño (Paleta Extendida) ---
 export const SIDEBAR_WIDTH = 250; 
-const PRIMARY_HONEY = '#D97706';     
-const ACCENT_ORANGE = '#F6AD55';     
+const PRIMARY_HONEY = '#D97706';     
+const ACCENT_ORANGE = '#F6AD55';     
 const TEXT_DARK = '#374151'; 
 const TEXT_MUTED = '#6B7280'; 
 
@@ -31,7 +31,7 @@ const iconMap = {
     'reports': FileText || FaFileAlt,
     'default': Home || FaHome,
 };
-const SettingsIcon = Settings || FaCog;
+const LogoIcon = ListChecks || FaThList; 
 const LogoutIcon = LogOut || FaSignOutAlt;
 const CloseIcon = X; 
 
@@ -45,13 +45,24 @@ const styles = {
         transform: isVisible ? 'translateX(0)' : 'translateX(-100%)',
     }),
     header: {
-        fontSize: '1.6rem', 
+        fontSize: '1.4rem', 
         letterSpacing: '0.05em', 
         fontWeight: 'extrabold', marginBottom: '30px', textAlign: 'center',
         borderBottom: '1px solid rgba(255, 255, 255, 0.2)', paddingBottom: '15px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
     },
-    titleContainer: { display: 'flex', alignItems: 'center', gap: '8px' }, 
+    titleContainer: { 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '1px', 
+        // Eliminamos flexGrow y los márgenes automáticos para alineación a la izquierda
+    }, 
+    // ESTILO PARA EL LOGO PROPIO
+    logoImage: {
+        width: 'auto', 
+        height: '40px', // Tamaño sugerido
+        // Eliminamos los márgenes automáticos para que se quede a la izquierda
+    },
     closeButtonContainer: {
         padding: '5px',
         borderRadius: '50%',
@@ -95,35 +106,25 @@ const styles = {
 
 
 function Sidebar({ isVisible, selectedMenu, setSelectedMenu, toggleSidebar }) { 
-    const navigate = useNavigate();
-    // 🚨 Extraemos el objeto user del contexto
-    const { logout, user } = useContext(AuthContext); 
-    // 🚨 CORRECCIÓN CLAVE: Usamos 'user?.role'
-    const userRole = user?.role; // 'superadmin' o 'apicultor' o undefined/null
+    const navigate = useNavigate();
+    const { logout, user } = useContext(AuthContext); 
+    const userRole = user?.role; 
 
-    // Definición base de todos los ítems del menú con sus roles requeridos
-    const baseMenuItems = [
-        { name: 'Dashboard Apicultor', key: 'dashboard', path: '/app/dashboard', requiredRole: 'apicultor' },
-        { name: 'Mis Colmenas', key: 'hives', path: '/app/mis-colmenas', requiredRole: 'apicultor' }, 
-        { name: 'Alertas', key: 'alerts', path: '/app/alerts', requiredRole: 'apicultor' },
-        { name: 'Reportes', key: 'reports', path: '/app/reports', requiredRole: 'apicultor' },
-        // Enlace solo para administradores
-        { name: 'Admin Principal', key: 'admin-main', path: '/admin/dashboard', requiredRole: 'superadmin' },
-    ];
-    
-    // 🚨 LÓGICA DE FILTRADO FINAL Y ROBUSTA:
+    const baseMenuItems = [
+        { name: 'Dashboard Apicultor', key: 'dashboard', path: '/app/dashboard', requiredRole: 'apicultor' },
+        { name: 'Mis Colmenas', key: 'hives', path: '/app/mis-colmenas', requiredRole: 'apicultor' }, 
+        { name: 'Admin Principal', key: 'admin-main', path: '/admin/dashboard', requiredRole: 'superadmin' },
+    ];
+    
     const filteredMenuItems = baseMenuItems.filter(item => {
-        // Si el rol aún no está cargado, no muestra enlaces (seguro)
         if (!userRole) return false; 
         
         const required = item.requiredRole;
         
-        // 1. Si el usuario es superadmin, puede ver CUALQUIER enlace.
         if (userRole === 'superadmin') {
             return true;
         }
 
-        // 2. Si el usuario es apicultor, solo puede ver enlaces marcados como 'apicultor'.
         if (userRole === 'apicultor' && required === 'apicultor') {
             return true;
         }
@@ -132,97 +133,102 @@ function Sidebar({ isVisible, selectedMenu, setSelectedMenu, toggleSidebar }) {
     });
 
 
-    const [hoverKey, setHoverKey] = useState(null);
-    const [logoutHover, setLogoutHover] = useState(false);
-    const [closeHover, setCloseHover] = useState(false); 
+    const [hoverKey, setHoverKey] = useState(null);
+    const [logoutHover, setLogoutHover] = useState(false);
+    const [closeHover, setCloseHover] = useState(false); 
 
-    const handleNavigation = (path, key) => {
-        setSelectedMenu(key);
-        navigate(path);
-    };
+    const handleNavigation = (path, key) => {
+        setSelectedMenu(key);
+        navigate(path);
+    };
 
-    const handleLogout = () => {
-        logout(); 
-        navigate('/login'); 
-    };
+    const handleLogout = () => {
+        logout(); 
+        navigate('/login'); 
+    };
 
-    return (
-        <div style={styles.sidebar(isVisible)}> 
-            <div style={styles.header}>
-                <div style={styles.titleContainer}>
-                    <SettingsIcon size={24} style={{ color: ACCENT_ORANGE }} />
-                    BeeHive Central
-                </div>
-                
-                {/* BOTÓN DE CIERRE PROFESIONAL (Lucide X o &times; como fallback) */}
-                <div 
-                    onClick={toggleSidebar} 
-                    title="Cerrar menú"
-                    style={{
-                        ...styles.closeButtonContainer,
-                        backgroundColor: closeHover ? 'rgba(255,255,255,0.1)' : 'transparent'
-                    }}
-                    onMouseEnter={() => setCloseHover(true)}
-                    onMouseLeave={() => setCloseHover(false)}
-                >
-                    {/* Renderiza el icono X de Lucide si está disponible, sino usa el carácter &times; */}
-                    {CloseIcon ? <CloseIcon size={24} style={styles.closeIcon(closeHover)} /> : <span style={styles.closeIcon(closeHover)}>&times;</span>}
-                </div>
-            </div>
-            
-            <nav>
-                {/* 🚨 Usamos la lista FILTRADA */}
-                {filteredMenuItems.map((item) => {
-                    const isSelected = selectedMenu === item.key;
-                    const isHovering = hoverKey === item.key;
-                    
-                    let itemStyle = {
-                        ...styles.menuItem,
-                        ...(isSelected ? styles.menuItemSelected : (isHovering ? styles.menuItemHover : {})),
-                        color: isSelected ? PRIMARY_HONEY : 'white',
-                    };
+    return (
+        <div style={styles.sidebar(isVisible)}> 
+            <div style={styles.header}>
+                <div style={styles.titleContainer}>
+                    {/* LOGO A LA IZQUIERDA */}
+                    <img 
+                        src="/beedata_logo.png" 
+                        alt="BeeData Logo" 
+                        style={styles.logoImage} 
+                    />
+                    {/* TEXTO A LA DERECHA DEL LOGO */}
+                    <span style={{ fontWeight: 'bold', marginLeft: '-25px' }}>
+                        BeeHive Monitor
+                    </span>
+                </div>
+                
+                {/* BOTÓN DE CIERRE PROFESIONAL */}
+                <div 
+                    onClick={toggleSidebar} 
+                    title="Cerrar menú"
+                    style={{
+                        ...styles.closeButtonContainer,
+                        backgroundColor: closeHover ? 'rgba(255,255,255,0.1)' : 'transparent'
+                    }}
+                    onMouseEnter={() => setCloseHover(true)}
+                    onMouseLeave={() => setCloseHover(false)}
+                >
+                    {CloseIcon ? <CloseIcon size={24} style={styles.closeIcon(closeHover)} /> : <span style={styles.closeIcon(closeHover)}>&times;</span>}
+                </div>
+            </div>
+            
+            <nav>
+                {filteredMenuItems.map((item) => {
+                    const isSelected = selectedMenu === item.key;
+                    const isHovering = hoverKey === item.key;
+                    
+                    let itemStyle = {
+                        ...styles.menuItem,
+                        ...(isSelected ? styles.menuItemSelected : (isHovering ? styles.menuItemHover : {})),
+                        color: isSelected ? PRIMARY_HONEY : 'white',
+                    };
 
-                    // Obtener el componente de icono
-                    const IconComponent = iconMap[item.key] || iconMap['default'];
+                    const IconComponent = iconMap[item.key] || iconMap['default'];
 
-                    return (
-                        <div
-                            key={item.key}
-                            style={itemStyle}
-                            onClick={() => handleNavigation(item.path, item.key)}
-                            onMouseEnter={() => setHoverKey(item.key)}
-                            onMouseLeave={() => setHoverKey(null)}
-                        >
-                            <span style={{ marginRight: '10px' }}>
-                                <IconComponent 
-                                    size={20} 
-                                    color={isSelected ? PRIMARY_HONEY : (isHovering ? TEXT_DARK : 'white')} 
-                                />
-                            </span>
-                            {item.name}
-                        </div>
-                    );
-                })}
-            </nav>
+                    return (
+                        <div
+                            key={item.key}
+                            style={itemStyle}
+                            onClick={() => handleNavigation(item.path, item.key)}
+                            onMouseEnter={() => setHoverKey(item.key)}
+                            onMouseLeave={() => setHoverKey(null)}
+                        >
+                            <span style={{ marginRight: '10px' }}>
+                                <IconComponent 
+                                    size={20} 
+                                    color={isSelected ? PRIMARY_HONEY : (isHovering ? TEXT_DARK : 'white')} 
+                                />
+                            </span>
+                            {item.name}
+                        </div>
+                    );
+                })}
+            </nav>
 
-            <div style={styles.footer}>
-                <button
-                    style={{ ...styles.logoutButton, ...(logoutHover ? styles.logoutButtonHover : {}) }}
-                    onClick={handleLogout}
-                    onMouseEnter={() => setLogoutHover(true)}
-                    onMouseLeave={() => setLogoutHover(false)}
-                >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                        <LogoutIcon 
-                            size={20} 
-                            color={logoutHover ? PRIMARY_HONEY : 'white'} 
-                        />
-                        Cerrar Sesión
-                    </div>
-                </button>
-            </div>
-        </div>
-    );
+            <div style={styles.footer}>
+                <button
+                    style={{ ...styles.logoutButton, ...(logoutHover ? styles.logoutButtonHover : {}) }}
+                    onClick={handleLogout}
+                    onMouseEnter={() => setLogoutHover(true)}
+                    onMouseLeave={() => setLogoutHover(false)}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                        <LogoutIcon 
+                            size={20} 
+                            color={logoutHover ? PRIMARY_HONEY : 'white'} 
+                        />
+                        Cerrar Sesión
+                    </div>
+                </button>
+            </div>
+        </div>
+    );
 }
 
 export default Sidebar;

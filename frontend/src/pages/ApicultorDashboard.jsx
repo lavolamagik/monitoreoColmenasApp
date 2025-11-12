@@ -371,7 +371,6 @@ function ApicultorDashboard() {
                 {/* -------------------------------------------------------- */}
                 {/* FILTRO Y ACCESO RÁPIDO A COLMENA */}
                 {/* -------------------------------------------------------- */}
-                <h2 style={{...dashboardStyles.sectionTitle, marginBottom: '20px'}}>Acceso Rápido</h2>
                 {isLoadingData ? (
                     <p style={{color: TEXT_MUTED}}>Cargando colmenas...</p>
                 ) : dataError ? (
